@@ -103,6 +103,22 @@ git push origin v0.1.0
 
 The workflow creates a **draft** release with the AppImage, DEB and RPM attached. Review it and publish when ready.
 
+## Troubleshooting
+
+- **The window shows blocks of white and green.** WebKitGTK’s DMA-BUF renderer corrupts the surface on some Mesa/driver combinations, so the app disables it by default. If your system renders correctly with it, you can opt back in:
+
+  ```bash
+  DSH_DESKTOP_ALLOW_DMABUF=1 ./DSH_*_amd64.AppImage
+  ```
+
+- **Use a specific DSH binary.** Point `DSH_BIN` at the executable you want to run:
+
+  ```bash
+  DSH_BIN=/path/to/dsh pnpm dev
+  ```
+
+- **The app cannot install DSH.** The in-app installer needs `node` and `npm`. Install them with your distribution package manager.
+
 ## License
 
 [MIT](LICENSE)
