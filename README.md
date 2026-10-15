@@ -4,16 +4,37 @@ Prototipo de aplicación de escritorio para abrir DeepSeek Harness Web sin tener
 
 ## Qué hace
 
-1. Arranca `dsh --profile web --no-open --port 0` como proceso hijo.
-2. Espera la URL autenticada que DSH anuncia cuando el servidor está listo.
-3. Abre esa URL dentro de una ventana Tauri 2/WebView.
-4. Cierra el proceso DSH al salir de la aplicación.
+1. Detecta un DSH ya instalado en el sistema (`dsh` en `PATH`).
+2. Si no lo encuentra, ofrece instalarlo desde la propia ventana, eligiendo versión estable o preliminar.
+3. Arranca `dsh --profile web --no-open --port 0` como proceso hijo.
+4. Espera la URL autenticada que DSH anuncia cuando el servidor está listo.
+5. Abre esa URL dentro de una ventana Tauri 2/WebView.
+6. Cierra el proceso DSH al salir de la aplicación.
+
+## Primer arranque
+
+La primera vez que se abre la aplicación se comprueba si DSH está disponible. Si no lo está, aparece un instalador gráfico con:
+
+- Estado de detección de DSH y de Node.js/npm.
+- Selector de versiones publicadas del paquete `@deepseek-ai/dsh`.
+- Casilla **Mostrar también versiones preliminares (rc, beta, alpha)**.
+- Botón para instalar y botón para abrir DSH al terminar.
+
+Si no existe ninguna versión estable publicada, el instalador avisa y muestra automáticamente las preliminares.
+
+DSH se instala en el espacio de usuario de la aplicación:
+
+```text
+~/.local/share/dsh-desktop/runtime
+```
+
+Se respetan `XDG_DATA_HOME` y la variable `DSH_BIN` para usar un binario propio. Los DSH instalados en el sistema nunca se modifican.
 
 El servidor sigue siendo el Web oficial de DSH: esta primera iteración es un launcher nativo, no una reimplementación de la interfaz ni del runtime de agentes. Esto mantiene compatibilidad con sesiones, plugins, credenciales y actualizaciones de DSH.
 
 ## Requisitos Linux / CachyOS
 
-- `dsh` instalado y funcionando desde una terminal (`dsh --version`).
+- `dsh` instalado en `PATH` **o** Node.js/npm para instalarlo desde la aplicación en el primer arranque.
 - Rust, Cargo y `cargo-tauri` para compilar.
 - Dependencias WebKitGTK de Tauri 2 (en CachyOS/Arch suelen estar disponibles mediante `webkit2gtk-4.1`, `libappindicator-gtk3`, `librsvg` y herramientas de desarrollo).
 
@@ -71,7 +92,7 @@ git push origin v0.1.0
 
 La release se crea como borrador y contiene AppImage, DEB y RPM.
 
-> **Importante:** esta primera distribución empaqueta el launcher Tauri, pero `dsh` sigue siendo un requisito externo y debe estar instalado en `PATH`. El siguiente paso para una distribución completamente autocontenida es incluir el runtime de DSH y sus plugins en un bundle versionado.
+> **Importante:** los paquetes contienen el launcher y su instalador, pero no incluyen Node.js. Si el usuario no tiene `dsh` en `PATH`, la instalación desde la aplicación necesita `node` y `npm`; en Arch/CachyOS: `sudo pacman -S nodejs npm`.
 
 Para generar los paquetes localmente:
 
