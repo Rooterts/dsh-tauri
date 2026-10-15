@@ -5,5 +5,5 @@
   "identifier": "ai.deepseek.dsh",
   "build": { "frontendDist": "../dist" },
   "app": {"withGlobalTauri": false,"windows": [{"label":"splash","title":"DSH","width":1100,"height":760,"minWidth":720,"minHeight":520,"resizable":true,"fullscreen":false}],"security":{"csp":null}},
-  "bundle": {"active":true,"targets":["appimage","deb","rpm"],"icon":["icons/icon.png","icons/icon.svg"],"shortDescription":"DeepSeek Harness sin terminal","longDescription":"Cliente de escritorio para abrir DeepSeek Harness Web en Linux y otras plataformas Tauri.","category":"Utility"}
+  "bundle": {"active":true,"targets":["appimage","deb","rpm"],"icon":["icons/icon.png"],"shortDescription":"DeepSeek Harness sin terminal","longDescription":"Cliente de escritorio para abrir DeepSeek Harness Web en Linux y otras plataformas Tauri.","category":"Utility"}
 }
