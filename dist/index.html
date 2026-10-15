@@ -1,2 +1,225 @@
 <!doctype html>
-<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>DSH</title><style>body{margin:0;background:#101318;color:#e8edf2;font:15px system-ui,sans-serif;display:grid;place-items:center;height:100vh}.card{text-align:center;max-width:460px;padding:32px}.mark{font-size:44px;margin-bottom:12px}.muted{color:#9aa7b5;line-height:1.5}.error{color:#ff8e8e;margin-top:20px;white-space:pre-wrap}</style></head><body><main class="card"><div class="mark">◈</div><h1>Iniciando DSH</h1><p class="muted">Preparando el servidor local de DeepSeek Harness…</p><p id="error" class="error"></p></main><script>window.setTimeout(()=>{document.querySelector('#error').textContent='El servidor está tardando más de lo esperado. Comprueba que “dsh” está instalado y disponible en PATH.'},15000)</script></body></html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>DSH</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101318;color:#e8edf2;font:15px/1.5 system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.card{width:100%;max-width:560px}
+.mark{font-size:40px;text-align:center;margin-bottom:10px}
+h1{font-size:22px;text-align:center;margin:0 0 6px}
+.muted{color:#9aa7b5;text-align:center;margin:0 0 22px}
+.panel{background:#171b22;border:1px solid #232a35;border-radius:14px;padding:20px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+label.check{display:flex;gap:9px;align-items:center;color:#c7d2de;cursor:pointer;user-select:none}
+input[type=checkbox]{width:17px;height:17px;accent-color:#8b5cf6}
+select,button{font:inherit}
+select{flex:1;min-width:190px;background:#101318;color:#e8edf2;border:1px solid #2b3340;border-radius:9px;padding:10px}
+button{background:#8b5cf6;color:#fff;border:0;border-radius:9px;padding:10px 17px;cursor:pointer;font-weight:600}
+button:hover:not(:disabled){background:#7c4ff0}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.ghost{background:transparent;border:1px solid #2b3340;color:#c7d2de;font-weight:500}
+button.ghost:hover:not(:disabled){background:#1e242e}
+.section{margin-top:16px;padding-top:16px;border-top:1px solid #232a35}
+.section:first-child{margin-top:0;padding-top:0;border-top:0}
+.status{display:flex;gap:8px;align-items:center;font-size:14px;color:#9aa7b5}
+.dot{width:9px;height:9px;border-radius:50%;background:#4b5563;flex:0 0 auto}
+.dot.ok{background:#34d399}
+.dot.bad{background:#f87171}
+.error{color:#ff9b9b;margin:12px 0 0;white-space:pre-wrap;font-size:13.5px}
+.ok{color:#6ee7b7;margin:12px 0 0;font-size:13.5px}
+.notice{color:#fbbf24;margin:12px 0 0;font-size:13.5px}
+.hint{color:#77838f;font-size:13px;margin:12px 0 0}
+.spinner{width:15px;height:15px;border:2px solid #4b5563;border-top-color:#8b5cf6;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hidden{display:none}
+code{background:#101318;border:1px solid #232a35;border-radius:5px;padding:1px 5px;font-size:12.5px}
+</style>
+</head>
+<body>
+<main class="card">
+<div class="mark">◈</div>
+<h1 id="title">Iniciando DSH</h1>
+<p class="muted" id="subtitle">Preparando el servidor local de DeepSeek Harness…</p>
+<section class="panel hidden" id="installer">
+<div class="section">
+<div class="status"><span class="dot" id="dot-dsh"></span><span id="status-dsh">Comprobando DSH…</span></div>
+<div class="status" style="margin-top:8px"><span class="dot" id="dot-node"></span><span id="status-node">Comprobando Node.js…</span></div>
+</div>
+<div class="section" id="install-section">
+<p class="muted" style="text-align:left;margin:0 0 14px">DSH no está instalado. Puedes instalarlo ahora en el espacio de usuario de la aplicación, sin usar la terminal.</p>
+<label class="check"><input type="checkbox" id="prerelease"> Mostrar también versiones preliminares (rc, beta, alpha)</label>
+<div class="row" style="margin-top:14px">
+<select id="versions" disabled><option>Carga la lista de versiones…</option></select>
+<button id="reload" class="ghost">Ver versiones</button>
+</div>
+<div class="row" style="margin-top:14px">
+<button id="install">Instalar versión seleccionada</button>
+<span class="spinner hidden" id="spinner"></span>
+</div>
+<p class="hint">Se instalará en <code>~/.local/share/dsh-desktop/runtime</code>.</p>
+</div>
+<div class="section hidden" id="ready-section">
+<div class="row">
+<button id="start">Abrir DSH</button>
+</div>
+</div>
+<p class="error hidden" id="error"></p>
+<p class="ok hidden" id="ok"></p>
+<p class="notice hidden" id="notice"></p>
+<p class="hint" id="node-hint"></p>
+</section>
+</main>
+<script>
+(function () {
+  var invoke = window.__TAURI__.core.invoke;
+  var el = function (id) { return document.getElementById(id); };
+  var busy = false;
+
+  function setError(message) {
+    var node = el("error");
+    if (message) { node.textContent = message; node.classList.remove("hidden"); }
+    else { node.textContent = ""; node.classList.add("hidden"); }
+  }
+
+  function setOk(message) {
+    var node = el("ok");
+    if (message) { node.textContent = message; node.classList.remove("hidden"); }
+    else { node.textContent = ""; node.classList.add("hidden"); }
+  }
+
+  function setNotice(message) {
+    var node = el("notice");
+    if (message) { node.textContent = message; node.classList.remove("hidden"); }
+    else { node.textContent = ""; node.classList.add("hidden"); }
+  }
+
+  function setBusy(value) {
+    busy = value;
+    el("install").disabled = value || el("versions").disabled;
+    el("reload").disabled = value;
+    el("start").disabled = value;
+    el("install").textContent = value ? "Instalando…" : "Instalar versión seleccionada";
+    el("spinner").classList.toggle("hidden", !value);
+  }
+
+  function renderVersions(versions) {
+    var select = el("versions");
+    select.innerHTML = "";
+    if (!versions || !versions.length) {
+      var option = document.createElement("option");
+      option.textContent = "No hay versiones disponibles";
+      select.appendChild(option);
+      select.disabled = true;
+      el("install").disabled = true;
+      return;
+    }
+    versions.forEach(function (version) {
+      var option = document.createElement("option");
+      option.value = version;
+      option.textContent = version + (version.indexOf("-") === -1 ? "  (estable)" : "  (preliminar)");
+      select.appendChild(option);
+    });
+    select.disabled = false;
+    el("install").disabled = busy;
+  }
+
+  function loadVersions() {
+    setError("");
+    setOk("");
+    var select = el("versions");
+    select.innerHTML = "";
+    var placeholder = document.createElement("option");
+    placeholder.textContent = "Cargando…";
+    select.appendChild(placeholder);
+    select.disabled = true;
+    el("install").disabled = true;
+    setNotice("");
+    invoke("list_dsh_versions", { includePrerelease: el("prerelease").checked })
+      .then(function (versions) {
+        if (!versions.length && !el("prerelease").checked) {
+          el("prerelease").checked = true;
+          setNotice("Todavía no hay versiones estables publicadas. Se muestran las versiones preliminares disponibles.");
+          return invoke("list_dsh_versions", { includePrerelease: true }).then(renderVersions);
+        }
+        renderVersions(versions);
+      })
+      .catch(function (error) { setError(String(error)); });
+  }
+
+  function install() {
+    var version = el("versions").value;
+    if (!version) { setError("Selecciona una versión de DSH"); return; }
+    setError("");
+    setOk("");
+    setBusy(true);
+    invoke("install_dsh", { version: version })
+      .then(function () {
+        setBusy(false);
+        setOk("DSH " + version + " instalado correctamente.");
+        return refreshStatus();
+      })
+      .catch(function (error) {
+        setBusy(false);
+        setError(String(error));
+      });
+  }
+
+  function start() {
+    setError("");
+    invoke("start_dsh").then(function () {
+      el("title").textContent = "Iniciando DSH";
+      el("subtitle").textContent = "Abriendo el servidor local de DeepSeek Harness…";
+      el("installer").classList.add("hidden");
+    }).catch(function (error) { setError(String(error)); });
+  }
+
+  function refreshStatus() {
+    return invoke("dsh_status").then(function (status) {
+      el("dot-dsh").className = "dot " + (status.available ? "ok" : "bad");
+      el("dot-node").className = "dot " + (status.nodeAvailable ? "ok" : "bad");
+      el("status-dsh").textContent = status.available
+        ? (status.managed ? "DSH detectado (instalado por la aplicación)" : "DSH detectado (instalado en el sistema)")
+        : "DSH no detectado";
+      el("status-node").textContent = status.nodeAvailable
+        ? "Node.js y npm disponibles"
+        : "Node.js y npm no disponibles";
+      el("node-hint").textContent = status.nodeAvailable
+        ? ""
+        : "La instalación automática necesita Node.js y npm. En Arch/CachyOS: sudo pacman -S nodejs npm";
+      if (status.available) {
+        el("install-section").classList.add("hidden");
+        el("ready-section").classList.remove("hidden");
+        el("subtitle").textContent = "DeepSeek Harness está listo.";
+      } else {
+        el("install-section").classList.remove("hidden");
+        el("ready-section").classList.add("hidden");
+        el("subtitle").textContent = "Necesitas instalar DeepSeek Harness para continuar.";
+      }
+      return status;
+    });
+  }
+
+  el("prerelease").addEventListener("change", loadVersions);
+  el("reload").addEventListener("click", loadVersions);
+  el("install").addEventListener("click", install);
+  el("start").addEventListener("click", start);
+
+  refreshStatus()
+    .then(function (status) {
+      if (!status.available) {
+        el("installer").classList.remove("hidden");
+        loadVersions();
+      }
+    })
+    .catch(function (error) {
+      el("installer").classList.remove("hidden");
+      setError("No se pudo comprobar DSH: " + String(error));
+      loadVersions();
+    });
+})();
+</script>
+</body>
+</html>
