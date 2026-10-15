@@ -31,11 +31,55 @@ En Linux/Wayland el launcher selecciona Wayland cuando está disponible y no fue
 
 ## Paquetes Linux
 
+La CI de GitHub genera automáticamente tres formatos al publicar un tag `vX.Y.Z`:
+
+- **AppImage**: opción recomendada para Arch/CachyOS y distribuciones no basadas en Debian.
+- **DEB**: Debian, Ubuntu, Linux Mint y derivados.
+- **RPM**: Fedora, openSUSE y derivados.
+
+### Instalar desde una release
+
+```bash
+# AppImage
+chmod +x DSH_*_amd64.AppImage
+./DSH_*_amd64.AppImage
+
+# Debian/Ubuntu
+sudo apt install ./DSH_*_amd64.deb
+
+# Fedora/openSUSE
+sudo dnf install ./DSH-*.x86_64.rpm
+```
+
+### Arch Linux / CachyOS
+
+La forma más sencilla es usar AppImage. También se incluye un PKGBUILD en `packaging/arch/`; antes de usarlo hay que cambiar `OWNER/REPOSITORY` por el repositorio real y ajustar `pkgver` al tag publicado:
+
+```bash
+cd packaging/arch
+makepkg -si
+```
+
+### Publicar una release
+
+La workflow de GitHub Actions se activa al subir un tag semántico:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+La release se crea como borrador y contiene AppImage, DEB y RPM.
+
+> **Importante:** esta primera distribución empaqueta el launcher Tauri, pero `dsh` sigue siendo un requisito externo y debe estar instalado en `PATH`. El siguiente paso para una distribución completamente autocontenida es incluir el runtime de DSH y sus plugins en un bundle versionado.
+
+Para generar los paquetes localmente:
+
 ```bash
 pnpm build
 ```
 
-Genera AppImage, `.deb` y `.rpm` en `src-tauri/target/release/bundle/` según las herramientas instaladas.
+Los artefactos aparecen en `src-tauri/target/release/bundle/`.
 
 ## Rama experimental wgpu/Vulkan
 

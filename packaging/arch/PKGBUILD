@@ -1,0 +1,18 @@
+pkgname=dsh-desktop
+pkgver=0.1.0
+pkgrel=1
+pkgdesc='Tauri desktop launcher for DeepSeek Harness Web'
+arch=('x86_64')
+url='https://github.com/OWNER/REPOSITORY'
+license=('MIT')
+depends=('webkit2gtk-4.1' 'fuse2')
+source=("DSH_${pkgver}_amd64.AppImage::${url}/releases/download/v${pkgver}/DSH_${pkgver}_amd64.AppImage" 'dsh.desktop' 'dsh.svg')
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "DSH_${pkgver}_amd64.AppImage" "${pkgdir}/opt/dsh-desktop/dsh-desktop"
+  install -Dm644 dsh.desktop "${pkgdir}/usr/share/applications/dsh.desktop"
+  install -Dm644 dsh.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/dsh.svg"
+  install -d "${pkgdir}/usr/bin"
+  ln -s /opt/dsh-desktop/dsh-desktop "${pkgdir}/usr/bin/dsh-desktop"
+}

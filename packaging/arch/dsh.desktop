@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=DSH Desktop
+Comment=DeepSeek Harness without a terminal
+Exec=dsh-desktop
+Icon=dsh
+Terminal=false
+Type=Application
+Categories=Utility;Development;
