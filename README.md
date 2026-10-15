@@ -37,6 +37,20 @@ pnpm build
 
 Genera AppImage, `.deb` y `.rpm` en `src-tauri/target/release/bundle/` según las herramientas instaladas.
 
+## Rama experimental wgpu/Vulkan
+
+La rama Git `experiment/wgpu-vulkan-shell` añade una sonda wgpu que selecciona exclusivamente Vulkan y registra el adaptador físico detectado. Sirve para validar la GPU nativa del sistema antes de construir un renderer propio.
+
+Importante: esta sonda no sustituye todavía el WebView de DSH. WebKitGTK sigue siendo el motor que pinta la web y utiliza EGL/OpenGL en Linux. Para reemplazarlo completamente habría que cambiar a Chromium/CEF o implementar un compositor híbrido, con un coste mayor de RAM y mantenimiento.
+
+Para probar la rama:
+
+~~~bash
+git switch experiment/wgpu-vulkan-shell
+pnpm install
+pnpm dev
+~~~
+
 ## Siguientes iteraciones
 
 - Detectar instalaciones de `dsh` fuera de `PATH` y permitir elegir el binario.
