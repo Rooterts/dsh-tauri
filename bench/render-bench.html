@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DSH-style streaming benchmark</title>
+<style>
+  body{margin:0;background:#151517;color:#f9fafb;font:14px/20px system-ui,sans-serif}
+  #list{padding:12px;display:flex;flex-direction:column;gap:10px}
+  .row{padding:10px 12px;border-radius:12px;background:#2c2c2e;max-width:720px}
+  .meta{color:#adb2b8;font-size:12px}
+  code{background:#1b1b1c;padding:1px 5px;border-radius:4px;font-family:monospace}
+</style>
+</head>
+<body>
+<div id="list"></div>
+<script>
+(function () {
+  var ROWS = 200;
+  var TOKENS_PER_FRAME = 3;
+  var DURATION_MS = 6000;
+  var list = document.getElementById("list");
+  var rows = [];
+
+  var words = "the quick brown fox jumps over a lazy dog while streaming tokens into the conversation view".split(" ");
+  for (var i = 0; i < ROWS; i++) {
+    var div = document.createElement("div");
+    div.className = "row";
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = "assistant - message " + i;
+    var body = document.createElement("div");
+    body.textContent = words.slice(0, 12).join(" ");
+    div.appendChild(meta);
+    div.appendChild(body);
+    list.appendChild(div);
+    rows.push(body);
+  }
+
+  var last = rows[rows.length - 1];
+  var frames = [];
+  var start = 0;
+  var tokenIndex = 0;
+  var measuring = false;
+  var done = false;
+
+  function frameStart(ts) {
+    if (done) return;
+    if (!measuring) {
+      measuring = true;
+      start = ts;
+    }
+    requestAnimationFrame(frameStart);
+    var elapsed = ts - start;
+    if (elapsed > DURATION_MS) {
+      done = true;
+      report();
+      return;
+    }
+    frames.push(ts);
+    // Simulate streaming tokens plus a partial re-render of the visible chat.
+    var chunk = [];
+    for (var t = 0; t < TOKENS_PER_FRAME; t++) {
+      chunk.push(words[tokenIndex % words.length]);
+      tokenIndex++;
+    }
+    last.textContent = last.textContent + " " + chunk.join(" ");
+    var visible = rows.slice(-25);
+    for (var v = 0; v < visible.length; v++) {
+      visible[v].style.opacity = measuring ? "0.999" : "1";
+    }
+    // Force layout so style/layout cost is part of the measurement.
+    if (tokenIndex % 30 === 0) {
+      void list.offsetHeight;
+    }
+  }
+
+  function percentile(sorted, p) {
+    if (!sorted.length) return 0;
+    var index = Math.min(sorted.length - 1, Math.floor(sorted.length * p));
+    return sorted[index];
+  }
+
+  function report() {
+    var deltas = [];
+    for (var i = 1; i < frames.length; i++) deltas.push(frames[i] - frames[i - 1]);
+    deltas.sort(function (a, b) { return a - b; });
+    var sum = 0;
+    for (var j = 0; j < deltas.length; j++) sum += deltas[j];
+    var avg = deltas.length ? sum / deltas.length : 0;
+    var result = {
+      engine: navigator.userAgent,
+      frames: frames.length,
+      seconds: DURATION_MS / 1000,
+      fps: avg > 0 ? Math.round((1000 / avg) * 10) / 10 : 0,
+      p50ms: Math.round(percentile(deltas, 0.5) * 10) / 10,
+      p95ms: Math.round(percentile(deltas, 0.95) * 10) / 10,
+      maxms: Math.round((deltas.length ? deltas[deltas.length - 1] : 0) * 10) / 10
+    };
+    fetch("/report", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(result) })
+      .then(function () { document.title = "done"; })
+      .catch(function () { document.title = "error"; });
+  }
+
+  requestAnimationFrame(frameStart);
+})();
+</script>
+</body>
+</html>

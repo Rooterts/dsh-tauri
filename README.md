@@ -103,12 +103,16 @@ git push origin v0.1.0
 
 The workflow creates a **draft** release with the AppImage, DEB and RPM attached. Review it and publish when ready.
 
+### Rendering benchmark
+
+`bench/` contains the harness used to compare WebKitGTK configurations and Chromium on the same machine, together with the measured results. See [bench/README.md](bench/README.md).
+
 ## Troubleshooting
 
-- **The window shows blocks of white and green.** WebKitGTK’s DMA-BUF renderer corrupts the surface on some Mesa/driver combinations, so the app disables it by default. If your system renders correctly with it, you can opt back in:
+- **The window shows blocks of white and green.** WebKitGTK’s GPU compositing path corrupts the window surface on some Mesa/driver combinations, so the app uses the CPU compositor by default. On the measured workload that path was also faster (61 fps against 40-47 fps) and used less CPU and memory. Force the stock GPU path with:
 
   ```bash
-  DSH_DESKTOP_ALLOW_DMABUF=1 ./DSH_*_amd64.AppImage
+  DSH_DESKTOP_ALLOW_GPU_COMPOSITING=1 ./DSH_*_amd64.AppImage
   ```
 
 - **Use a specific DSH binary.** Point `DSH_BIN` at the executable you want to run:
