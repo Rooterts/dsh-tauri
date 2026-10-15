@@ -1,125 +1,108 @@
-# DSH Desktop (Tauri 2)
+# DSH Desktop
 
-Prototipo de aplicación de escritorio para abrir DeepSeek Harness Web sin tener que escribir `dsh web` en una terminal.
+A desktop app for **DeepSeek Harness**: it opens the DSH Web UI in a native window, so you never have to run `dsh web` in a terminal.
 
-## Qué hace
+## Features
 
-1. Detecta un DSH ya instalado en el sistema (`dsh` en `PATH`).
-2. Si no lo encuentra, ofrece instalarlo desde la propia ventana, eligiendo versión estable o preliminar.
-3. Arranca `dsh --profile web --no-open --port 0` como proceso hijo.
-4. Espera la URL autenticada que DSH anuncia cuando el servidor está listo.
-5. Abre esa URL dentro de una ventana Tauri 2/WebView.
-6. Cierra el proceso DSH al salir de la aplicación.
+- **No terminal.** Starts the DSH web server for you and opens it in a native window.
+- **First-run installer.** If DSH is not installed yet, the app offers to install it for you, with an optional list of prerelease versions.
+- **Respects your system install.** If `dsh` is already available, it is used as-is and never modified.
+- **Clean shutdown.** The DSH process is stopped when you close the window.
+- **Linux packaging.** AppImage, DEB and RPM builds are produced automatically for every release.
 
-## Primer arranque
+## Install
 
-La primera vez que se abre la aplicación se comprueba si DSH está disponible. Si no lo está, aparece un instalador gráfico con:
+Download the latest package from the [releases page](https://github.com/Rooterts/dsh-tauri/releases), or build it yourself.
 
-- Estado de detección de DSH y de Node.js/npm.
-- Selector de versiones publicadas del paquete `@deepseek-ai/dsh`.
-- Casilla **Mostrar también versiones preliminares (rc, beta, alpha)**.
-- Botón para instalar y botón para abrir DSH al terminar.
-
-Si no existe ninguna versión estable publicada, el instalador avisa y muestra automáticamente las preliminares.
-
-DSH se instala en el espacio de usuario de la aplicación:
-
-```text
-~/.local/share/dsh-desktop/runtime
-```
-
-Se respetan `XDG_DATA_HOME` y la variable `DSH_BIN` para usar un binario propio. Los DSH instalados en el sistema nunca se modifican.
-
-El servidor sigue siendo el Web oficial de DSH: esta primera iteración es un launcher nativo, no una reimplementación de la interfaz ni del runtime de agentes. Esto mantiene compatibilidad con sesiones, plugins, credenciales y actualizaciones de DSH.
-
-## Requisitos Linux / CachyOS
-
-- `dsh` instalado en `PATH` **o** Node.js/npm para instalarlo desde la aplicación en el primer arranque.
-- Rust, Cargo y `cargo-tauri` para compilar.
-- Dependencias WebKitGTK de Tauri 2 (en CachyOS/Arch suelen estar disponibles mediante `webkit2gtk-4.1`, `libappindicator-gtk3`, `librsvg` y herramientas de desarrollo).
-
-## Desarrollo
-
-Desde esta carpeta:
+### AppImage (any distribution)
 
 ```bash
-pnpm install
-pnpm dev              # release optimizado
-pnpm run dev:debug    # desarrollo con hot reload
-```
-
-En Linux/Wayland el launcher selecciona Wayland cuando está disponible y no fuerza renderizado por software. Tauri usa WebKitGTK; en Linux su composición del WebView se basa en EGL/OpenGL, aunque la GPU Vulkan del sistema siga disponible para otras aplicaciones.
-
-## Paquetes Linux
-
-La CI de GitHub genera automáticamente tres formatos al publicar un tag `vX.Y.Z`:
-
-- **AppImage**: opción recomendada para Arch/CachyOS y distribuciones no basadas en Debian.
-- **DEB**: Debian, Ubuntu, Linux Mint y derivados.
-- **RPM**: Fedora, openSUSE y derivados.
-
-### Instalar desde una release
-
-```bash
-# AppImage
 chmod +x DSH_*_amd64.AppImage
 ./DSH_*_amd64.AppImage
+```
 
-# Debian/Ubuntu
+### Debian / Ubuntu
+
+```bash
 sudo apt install ./DSH_*_amd64.deb
+```
 
-# Fedora/openSUSE
+### Fedora / openSUSE
+
+```bash
 sudo dnf install ./DSH-*.x86_64.rpm
 ```
 
 ### Arch Linux / CachyOS
 
-La forma más sencilla es usar AppImage. También se incluye un PKGBUILD en `packaging/arch/`; se debe ajustar `pkgver` al tag publicado y comprobar que `url` apunta al repositorio correcto:
+Use the AppImage, or build a package with the provided [PKGBUILD](packaging/arch/PKGBUILD):
 
 ```bash
 cd packaging/arch
 makepkg -si
 ```
 
-### Publicar una release
+The PKGBUILD downloads the AppImage from the GitHub release, so keep `pkgver` in sync with the released tag.
 
-La workflow de GitHub Actions se activa al subir un tag semántico, o manualmente desde la pestaña **Actions** con `workflow_dispatch`:
+## First run
+
+On startup the app checks whether DSH is available. If it is, the DSH Web UI opens right away. Otherwise you get an installer window where you can:
+
+- See whether DSH and Node.js/npm were detected.
+- Pick a DSH version from the published list.
+- Enable **Show prerelease versions (rc, beta, alpha)** to see non-stable builds.
+- Install, then open DSH.
+
+DSH is installed into your user data directory and is only used by this app:
+
+```text
+~/.local/share/dsh-desktop/runtime
+```
+
+`XDG_DATA_HOME` is respected. You can also point the app at an existing binary with the `DSH_BIN` environment variable.
+
+> Note: at the time of writing, `@deepseek-ai/dsh` only publishes prerelease versions. When no stable version exists, the installer says so and lists the prereleases instead.
+
+## Requirements
+
+- Linux with GTK3 / WebKitGTK 4.1 (already present on most desktops).
+- `dsh` in `PATH`, **or** `node` and `npm` so the app can install it for you. On Arch/CachyOS:
+
+  ```bash
+  sudo pacman -S nodejs npm
+  ```
+
+## Build from source
+
+```bash
+pnpm install
+pnpm dev            # release profile, uses the local dsh
+pnpm run dev:debug  # development profile with hot reload
+pnpm build          # AppImage, DEB and RPM in src-tauri/target/release/bundle/
+```
+
+## How it works
+
+The app is a native launcher, not a reimplementation of DSH. It runs the real DSH web server and renders the official web UI in a WebView, which keeps sessions, plugins and credentials fully compatible.
+
+1. Detect an existing `dsh`, or use the managed install.
+2. Run `dsh --profile web --no-open --port 0` as a child process.
+3. Wait for the URL the server prints when it is ready.
+4. Open that URL in a Tauri 2 / WebKitGTK window, and close the splash screen.
+
+During startup the app also probes for an accelerated graphics backend (Vulkan or OpenGL) in a short-lived helper process and logs the result. Your system GPU is used through the normal GTK/WebKitGTK stack; the probe is informational.
+
+## Maintainers
+
+Releases are built by GitHub Actions. Push a semantic tag, or run the *Release Linux bundles* workflow manually:
 
 ```bash
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-La release se crea como borrador y contiene AppImage, DEB y RPM.
+The workflow creates a **draft** release with the AppImage, DEB and RPM attached. Review it and publish when ready.
 
-> **Importante:** los paquetes contienen el launcher y su instalador, pero no incluyen Node.js. Si el usuario no tiene `dsh` en `PATH`, la instalación desde la aplicación necesita `node` y `npm`; en Arch/CachyOS: `sudo pacman -S nodejs npm`.
+## License
 
-Para generar los paquetes localmente:
-
-```bash
-pnpm build
-```
-
-Los artefactos aparecen en `src-tauri/target/release/bundle/`.
-
-## Rama experimental wgpu/Vulkan
-
-La rama Git `experiment/wgpu-vulkan-shell` añade una sonda wgpu que selecciona exclusivamente Vulkan y registra el adaptador físico detectado. Sirve para validar la GPU nativa del sistema antes de construir un renderer propio.
-
-Importante: esta sonda no sustituye todavía el WebView de DSH. WebKitGTK sigue siendo el motor que pinta la web y utiliza EGL/OpenGL en Linux. Para reemplazarlo completamente habría que cambiar a Chromium/CEF o implementar un compositor híbrido, con un coste mayor de RAM y mantenimiento.
-
-Para probar la rama:
-
-~~~bash
-git switch experiment/wgpu-vulkan-shell
-pnpm install
-pnpm dev
-~~~
-
-## Siguientes iteraciones
-
-- Detectar instalaciones de `dsh` fuera de `PATH` y permitir elegir el binario.
-- Preferencias de puerto, perfil y directorio de trabajo.
-- Icono, autostart y notificación de bandeja para CachyOS/Hyprland.
-- Reutilizar el core/runtime de DSH como librería o proceso supervisado cuando exista una API pública estable.
-- Empaquetado reproducible para Linux y después Windows/macOS/Android/iOS donde Tauri lo permita.
+[MIT](LICENSE)
