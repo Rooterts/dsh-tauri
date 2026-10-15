@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,6 +21,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
       - name: Install Linux WebView dependencies
         run: |
           sudo apt-get update
@@ -36,6 +41,10 @@ jobs:
           releaseBody: |
             Linux bundles for DSH Desktop.
 
-            AppImage works on most distributions. DEB is intended for Debian/Ubuntu; RPM for Fedora/openSUSE.
+            - AppImage works on most distributions, including Arch and CachyOS.
+            - DEB is intended for Debian, Ubuntu and derivatives.
+            - RPM is intended for Fedora, openSUSE and derivatives.
+
+            DSH Desktop launches DeepSeek Harness Web without a terminal. On first start it detects an existing `dsh` installation or offers to install one into `~/.local/share/dsh-desktop/runtime`. Installing from the app requires `node` and `npm`.
           releaseDraft: true
           prerelease: false
