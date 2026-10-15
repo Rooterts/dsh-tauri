@@ -16,14 +16,15 @@ fn main() {
     {
         std::env::set_var("GDK_BACKEND", "wayland");
     }
-    // WebKitGTK 4.1 can produce corrupted surfaces (a half white, half green
-    // window) when the DMA-BUF renderer is used with some Mesa/driver
-    // combinations. Disable that path unless it was set explicitly or the user
-    // opts back in with DSH_DESKTOP_ALLOW_DMABUF=1.
-    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none()
-        && std::env::var_os("DSH_DESKTOP_ALLOW_DMABUF").is_none()
+    // With some Mesa/driver combinations the GPU compositing path of WebKitGTK
+    // corrupts the window surface (a half white, half green picture). Measured on
+    // this workload, the CPU compositor is also faster (61 fps against 40-47 fps)
+    // and uses less CPU and memory, so it is used by default. Set
+    // DSH_DESKTOP_ALLOW_GPU_COMPOSITING=1 to keep the stock GPU path.
+    if std::env::var_os("WEBKIT_DISABLE_COMPOSITING_MODE").is_none()
+        && std::env::var_os("DSH_DESKTOP_ALLOW_GPU_COMPOSITING").is_none()
     {
-        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
     }
     gpu::detect_best_backend();
     dsh_tauri_lib::run();
