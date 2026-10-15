@@ -42,8 +42,10 @@ fn find_dsh() -> Option<(String, bool)> {
             return Some((path, true));
         }
     }
-    if Command::new("dsh").arg("--version").output().is_ok() {
-        return Some(("dsh".into(), false));
+    if let Ok(output) = Command::new("dsh").arg("--version").output() {
+        if output.status.success() {
+            return Some(("dsh".into(), false));
+        }
     }
     managed_dsh()
         .ok()
@@ -52,7 +54,11 @@ fn find_dsh() -> Option<(String, bool)> {
 }
 
 fn node_available() -> bool {
-    Command::new("node").arg("--version").output().is_ok()
+    Command::new("node")
+        .arg("--version")
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
 }
 
 #[tauri::command]
