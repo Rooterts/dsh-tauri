@@ -1,0 +1,8 @@
+{
+  "name": "dsh-tauri",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Aplicación de escritorio Tauri 2 para DeepSeek Harness Web",
+  "scripts": {"dev": "tauri dev --release", "dev:debug": "tauri dev", "build": "tauri build", "check": "tauri info"},
+  "devDependencies": {"@tauri-apps/cli": "^2.8.0"}
+}
