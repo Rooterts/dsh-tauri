@@ -6,6 +6,7 @@
 pub fn probe_vulkan() {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::VULKAN,
+        flags: wgpu::InstanceFlags::default(),
         dx12_shader_compiler: Default::default(),
         gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
     });
