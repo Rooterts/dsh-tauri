@@ -3,6 +3,11 @@
 mod gpu;
 
 fn main() {
+    if std::env::args().any(|arg| arg == "--dsh-gpu-probe") {
+        gpu::probe_best_backend();
+        return;
+    }
+
     // En Wayland dejamos que WebKitGTK use la composición acelerada del sistema.
     // Tauri/WebKitGTK no ofrece un backend Vulkan directo: la GPU Vulkan sigue
     // disponible para el sistema, pero el WebView renderiza mediante EGL/OpenGL.
@@ -13,6 +18,6 @@ fn main() {
     }
     std::env::remove_var("LIBGL_ALWAYS_SOFTWARE");
     std::env::remove_var("WEBKIT_DISABLE_COMPOSITING_MODE");
-    gpu::probe_vulkan();
+    gpu::detect_best_backend();
     dsh_tauri_lib::run();
 }

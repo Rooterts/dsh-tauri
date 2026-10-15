@@ -1,11 +1,13 @@
-//! Experimental Vulkan capability probe.
+//! Experimental graphics backend detector.
 //!
-//! This deliberately does not replace the Tauri WebView yet: WebKitGTK owns
-//! the web surface and still composites through EGL/OpenGL on Linux.
+//! The probe runs in a short-lived helper process so wgpu/Vulkan libraries do
+//! not remain mapped in the main WebKitGTK process.
 
-pub fn probe_vulkan() {
+use std::process::Command;
+
+pub fn probe_best_backend() {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::VULKAN,
+        backends: wgpu::Backends::VULKAN | wgpu::Backends::GL,
         flags: wgpu::InstanceFlags::default(),
         dx12_shader_compiler: Default::default(),
         gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
@@ -20,11 +22,31 @@ pub fn probe_vulkan() {
     match adapter {
         Some(adapter) => {
             let info = adapter.get_info();
-            eprintln!(
-                "dsh gpu: Vulkan adapter={} vendor=0x{:04x} device=0x{:04x} backend={:?}",
-                info.name, info.vendor, info.device, info.backend
+            println!(
+                "dsh gpu: selected backend={:?} adapter={} vendor=0x{:04x} device=0x{:04x}",
+                info.backend, info.name, info.vendor, info.device
             );
         }
-        None => eprintln!("dsh gpu: no Vulkan adapter available; WebView fallback remains active"),
+        None => println!("dsh gpu: no accelerated adapter; WebView fallback remains active"),
+    }
+}
+
+pub fn detect_best_backend() {
+    let Ok(executable) = std::env::current_exe() else {
+        eprintln!("dsh gpu: could not locate helper executable");
+        return;
+    };
+
+    match Command::new(executable).arg("--dsh-gpu-probe").output() {
+        Ok(output) if output.status.success() => {
+            let result = String::from_utf8_lossy(&output.stdout);
+            eprintln!("{}", result.trim());
+        }
+        Ok(output) => eprintln!(
+            "dsh gpu: probe exited with {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr).trim()
+        ),
+        Err(error) => eprintln!("dsh gpu: probe unavailable: {error}"),
     }
 }
