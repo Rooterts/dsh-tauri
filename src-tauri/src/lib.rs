@@ -11,6 +11,9 @@ use tauri::{webview::WebviewWindowBuilder, AppHandle, Manager, RunEvent, Webview
 
 const DSH_PACKAGE: &str = "@deepseek-ai/dsh";
 
+/// Dark background matched to the DSH Web theme, so window creation never flashes white.
+const DSH_BACKGROUND: tauri::window::Color = tauri::window::Color(21, 21, 23, 255);
+
 #[derive(Default)]
 struct DshProcess(Mutex<Option<Child>>);
 
@@ -168,6 +171,7 @@ fn launch_web(app: AppHandle) {
                         WebviewUrl::External(url.parse().unwrap()),
                     )
                     .title("DSH — DeepSeek Harness")
+                    .background_color(DSH_BACKGROUND)
                     .inner_size(1280.0, 820.0)
                     .min_inner_size(760.0, 560.0)
                     .build()
