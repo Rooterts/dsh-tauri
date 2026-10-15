@@ -74,7 +74,7 @@ sudo dnf install ./DSH-*.x86_64.rpm
 
 ### Arch Linux / CachyOS
 
-La forma más sencilla es usar AppImage. También se incluye un PKGBUILD en `packaging/arch/`; antes de usarlo hay que cambiar `OWNER/REPOSITORY` por el repositorio real y ajustar `pkgver` al tag publicado:
+La forma más sencilla es usar AppImage. También se incluye un PKGBUILD en `packaging/arch/`; se debe ajustar `pkgver` al tag publicado y comprobar que `url` apunta al repositorio correcto:
 
 ```bash
 cd packaging/arch
@@ -83,7 +83,7 @@ makepkg -si
 
 ### Publicar una release
 
-La workflow de GitHub Actions se activa al subir un tag semántico:
+La workflow de GitHub Actions se activa al subir un tag semántico, o manualmente desde la pestaña **Actions** con `workflow_dispatch`:
 
 ```bash
 git tag v0.1.0
